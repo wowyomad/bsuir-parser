@@ -4,8 +4,6 @@ import os
 from pathlib import Path
 
 project_dir = Path(__file__).resolve().parent.parent
-
-
 data_dir = project_dir / "data"
 if not data_dir.exists():
     data_dir.mkdir()
@@ -28,26 +26,28 @@ day_order = {
 
 
 def get_and_parse_schedule(update_schedule=True):
+    parsed_schedule = None
     try:
         if update_schedule:
             raw_schedule = get_schedule_raw(update_schedule=update_schedule)
             parsed_schedule = get_schedule_parsed(schedule_raw=raw_schedule)
-            return parsed_schedule
         else:
             if os.path.exists(schedule_parsed_path) and os.path.getsize(schedule_parsed_path) > 0:
                 with open(schedule_parsed_path, 'r', encoding='utf-8') as parsed_file:
                     parsed_schedule = json.load(parsed_file)
-                return parsed_schedule
             else:
                 if os.path.exists(schedule_raw_path) and os.path.getsize(schedule_raw_path) > 0:
-                    parsed_schedule = get_schedule_raw(update_schedule=update_schedule)
+                    parsed_schedule = get_schedule_raw(update_schedule=False)
                 else:
-                    parsed_schedule = get_schedule_raw(schedule_raw_path)
+                    parsed_schedule = get_schedule_raw(update_schedule=update_schedule)
     except Exception as e:
         raise Exception(f"An error occurred: {str(e)}")
+    finally:
+        return parsed_schedule
 
 
 def get_schedule_raw(update_schedule=True):
+    schedule_raw = None
     try:
         if update_schedule:
             response = requests.get(schedule_raw_url)
@@ -57,20 +57,19 @@ def get_schedule_raw(update_schedule=True):
 
                 with open(schedule_raw_path, 'w', encoding='utf-8') as raw_file:
                     json.dump(schedule_raw, raw_file, indent=4, ensure_ascii=False)
-
-                return schedule_raw
             else:
                 raise Exception(f"Failed to retrieve {schedule_raw_path}. Status code: {response.status_code}")
         else:
             if os.path.exists(schedule_raw_path) and os.path.getsize(schedule_raw_path) > 0:
                 with open(schedule_raw_path, 'r', encoding='utf-8') as raw_file:
                     schedule_raw = raw_file.read()
-                return schedule_raw
             else:
                 raise Exception(f"{schedule_raw_path} file does not exist or is empty. Use update=True to update the schedule.")
 
     except Exception as e:
         raise Exception(f"An error occurred while getting raw schedule data: {str(e)}")
+    finally:
+        return schedule_raw
 
 
 def get_schedule_parsed(schedule_raw):
