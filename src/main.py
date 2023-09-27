@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+import urls
 from pathlib import Path
 
 project_dir = Path(__file__).resolve().parent.parent
@@ -8,8 +9,7 @@ data_dir = project_dir / "data"
 if not data_dir.exists():
     data_dir.mkdir()
 
-
-schedule_raw_url = "https://iis.bsuir.by/api/v1/schedule?studentGroup=124402"
+schedule_raw_url = urls.schedule(124402)
 schedule_raw_path = data_dir / "schedule_raw.json"
 schedule_parsed_path = data_dir / "schedule_parsed.json"
 
@@ -23,6 +23,16 @@ day_order = {
     "Пятница": 5,
     "Суббота": 6
 }
+
+subjects_with_queues = (
+    "ММДТТ",
+    "СТРWeb",
+    "ТВиА",
+    "СиТАиРИС",
+    "ПМИС",
+    "ПрогСП"
+)
+
 
 
 def get_and_parse_schedule(update_schedule=True):
@@ -85,10 +95,11 @@ def get_schedule_parsed(schedule_raw):
                     parsed[week_num][day] = []
                 parsed[week_num][day].append({
                     "subject": lesson["subject"],
+                    "lessonTypeAbbrev": lesson["lessonTypeAbbrev"],
                     "subjectFullName": lesson["subjectFullName"],
                     "startLessonTime": lesson["startLessonTime"],
                     "endLessonTime": lesson["endLessonTime"],
-                    "auditories": lesson["auditories"]
+                    "numSubgroup": lesson["numSubgroup"]
                 })
     with open(schedule_parsed_path, 'w', encoding='utf-8') as parsed_file:
         json.dump(parsed, parsed_file, ensure_ascii=False, indent=4)
@@ -96,13 +107,12 @@ def get_schedule_parsed(schedule_raw):
 
 
 if __name__ == '__main__':
-    schedule = get_and_parse_schedule(update_schedule=True)
+    schedule = get_and_parse_schedule(update_schedule=False)
 
     for week_num, week_schedule in schedule.items():
-
         print(f"Неделя {week_num}")
         for day, subjects in week_schedule.items():
             print(day)
             for subject in subjects:
                 print('\t', end='')
-                print(f'{subject["startLessonTime"]}-{subject["endLessonTime"]}: {subject["subject"]}')
+                print(f'{subject["startLessonTime"]}-{subject["endLessonTime"]}: {subject["lessonTypeAbbrev"]} {subject["numSubgroup"]} {subject["subject"]}')
